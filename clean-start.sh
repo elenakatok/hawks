@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# clean-start.sh — free Winemaster emulator ports and boot a fresh emulator suite.
+# clean-start.sh — free Hawks emulator ports and boot a fresh emulator suite.
 #
-# Kills only the six Winemaster-specific ports (source: firebase.json emulators block).
+# Kills only the six Hawks-specific ports (source: firebase.json emulators block).
 # Does NOT use killall node — other Firebase projects are left alone.
 # Builds Cloud Functions, starts auth+functions+firestore+database, confirms via health check.
 #
-# Run from anywhere:  bash games/winemaster/clean-start.sh
-# Or from winemaster: ./clean-start.sh
-# Press Ctrl+C to stop everything.  Log: /tmp/wm-emulators.log
+# Run from anywhere:  bash games/hawks/clean-start.sh
+# Or from hawks/:     ./clean-start.sh
+# Press Ctrl+C to stop everything.  Log: /tmp/hawks-emulators.log
 
 set -uo pipefail
 
@@ -22,14 +22,14 @@ PORT_DATABASE=9002
 PORT_HOSTING=5006
 PORT_UI=4002
 
-WM_PORTS=($PORT_AUTH $PORT_FUNCTIONS $PORT_FIRESTORE $PORT_DATABASE $PORT_HOSTING $PORT_UI)
+HAWKS_PORTS=($PORT_AUTH $PORT_FUNCTIONS $PORT_FIRESTORE $PORT_DATABASE $PORT_HOSTING $PORT_UI)
 
-LOG=/tmp/wm-emulators.log
+LOG=/tmp/hawks-emulators.log
 
-# ── 0. Free Winemaster emulator ports ────────────────────────────────────────
-echo "▶ Clearing Winemaster emulator ports..."
+# ── 0. Free Hawks emulator ports ──────────────────────────────────────────────
+echo "▶ Clearing Hawks emulator ports..."
 KILLED_ANY=false
-for port in "${WM_PORTS[@]}"; do
+for port in "${HAWKS_PORTS[@]}"; do
   pids=$(lsof -ti tcp:"$port" 2>/dev/null || true)
   if [ -n "$pids" ]; then
     for pid in $pids; do
@@ -107,8 +107,8 @@ fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Winemaster emulators are up ✅"
-echo "  Functions: http://localhost:${PORT_FUNCTIONS}/winemaster-mygames-live/us-central1"
+echo "  Hawks emulators are up ✅"
+echo "  Functions: http://localhost:${PORT_FUNCTIONS}/hawks-mygames-live/us-central1"
 echo "  Firestore: http://localhost:${PORT_FIRESTORE}"
 echo "  Database:  http://localhost:${PORT_DATABASE}"
 echo "  Log:       $LOG"
