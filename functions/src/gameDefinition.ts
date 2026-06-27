@@ -25,13 +25,48 @@ export const hawksScoreSense: Record<string, 'value' | 'cost'> = {
   hawks: 'value',
 }
 
-// ── Scoring (PLACEHOLDER — returns 0 for every role; real formulas in Part 3) ─
+// ── Scoring (spec-locked; units $M) ──────────────────────────────────────────
+// Outcome form fields: S (base salary 0–20), M (merch fraction 0–1), B (championship
+// bonus 0–20). All three roles are value-sense (higher surplus = better); reservations
+// are baked into the formulas. Walk-away / no-deal (null outcome) → surplus 0, stays
+// in the scored pool. True no-show (raw null, z = −2) is handled by finalize, not here.
+//   Angel surplus = 0.95·S + 8·M + 0.6·B − 2.205
+//   Agent surplus = 0.05·S
+//   Hawks surplus = 3 − 3·M − S − 0.1·B   (reservation 3 already baked in)
+
+const ANGEL_RESERVATION = 2.205
+
+// Round to the nearest $1,000 (3 decimals in $M): reproduces the locked conformance
+// vector exactly and keeps stored scores clean; immaterial to the z-score distribution.
+function round3(x: number): number {
+  return Math.round(x * 1000) / 1000
+}
 
 export function computeScoreBreakdown(
-  _roleKey: string,
-  _outcome: Outcome | null,
+  roleKey: string,
+  outcome: Outcome | null,
   _configData?: Record<string, unknown>,
 ): { value_or_cost: number; raw_score: number } {
+  // Walk-away / no-deal: zero surplus, stays in the scored pool.
+  if (outcome === null) return { value_or_cost: 0, raw_score: 0 }
+
+  const S = Number(outcome['S'] ?? 0)
+  const M = Number(outcome['M'] ?? 0)
+  const B = Number(outcome['B'] ?? 0)
+
+  if (roleKey === 'angel') {
+    const value = 0.95 * S + 8 * M + 0.6 * B
+    return { value_or_cost: round3(value), raw_score: round3(value - ANGEL_RESERVATION) }
+  }
+  if (roleKey === 'agent') {
+    const value = 0.05 * S
+    return { value_or_cost: round3(value), raw_score: round3(value) }
+  }
+  if (roleKey === 'hawks') {
+    // Realized cost to the Hawks; surplus = reservation (3) − cost.
+    const cost = 3 * M + S + 0.1 * B
+    return { value_or_cost: round3(cost), raw_score: round3(3 - cost) }
+  }
   return { value_or_cost: 0, raw_score: 0 }
 }
 
