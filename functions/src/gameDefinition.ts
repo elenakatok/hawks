@@ -11,10 +11,12 @@ export const hawksConfig: RoleConfig = {
   ],
 }
 
-// ── Outcome schema (PLACEHOLDER — real deal fields added in Part 3) ───────────
-
+// ── Outcome schema (the negotiated contract; units $M) ───────────────────────
+// Keys S/M/B match exactly what computeRawScore / computeScoreBreakdown read.
 export const hawksSchema: OutcomeSchema = [
-  { key: 'placeholder', type: 'integer', min: 0, max: 100 },
+  { key: 'S', type: 'decimal', min: 0, max: 20, step: 0.1  },  // base salary ($M)
+  { key: 'M', type: 'decimal', min: 0, max: 1,  step: 0.01 },  // merch fraction (0–1)
+  { key: 'B', type: 'decimal', min: 0, max: 20, step: 0.1  },  // championship bonus ($M)
 ]
 
 // ── Score sense (all value-sense — real scoring in Part 3) ───────────────────

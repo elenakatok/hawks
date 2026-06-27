@@ -56,7 +56,7 @@ type FormValues = Record<string, string | boolean>
 function defaultFormValues(): FormValues {
   const out: FormValues = {}
   for (const field of hawksSchema) {
-    if (field.type === 'integer')      out[field.key] = ''
+    if (field.type === 'integer' || field.type === 'decimal') out[field.key] = ''
     else if (field.type === 'enum')    out[field.key] = field.options[0]
     else                               out[field.key] = false
   }
@@ -80,6 +80,23 @@ function parseForm(values: FormValues): ParseOk | ParseErr {
         return {
           ok: false,
           error: `${lbl} must be between ${(field.min ?? 0).toLocaleString()} and ${(field.max ?? 0).toLocaleString()}.`,
+        }
+      }
+      outcome[field.key] = n
+    } else if (field.type === 'decimal') {
+      const raw = values[field.key] as string
+      const n   = Number(raw)
+      const lbl = FIELD_LABELS[field.key] ?? field.key
+      if (raw === '' || isNaN(n) || !Number.isFinite(n)) {
+        return { ok: false, error: `${lbl} is required.` }
+      }
+      if ((field.min !== undefined && n < field.min) || (field.max !== undefined && n > field.max)) {
+        return { ok: false, error: `${lbl} must be between ${field.min ?? 0} and ${field.max ?? 0}.` }
+      }
+      if (field.step !== undefined && field.step > 0) {
+        const q = n / field.step
+        if (Math.abs(q - Math.round(q)) > 1e-9) {
+          return { ok: false, error: `${lbl} must be in steps of ${field.step}.` }
         }
       }
       outcome[field.key] = n
@@ -123,6 +140,27 @@ function SchemaField({
         />
         <span style={{ fontSize: '0.8rem', color: '#888' }}>
           {(field.min ?? 0).toLocaleString()} – {(field.max ?? 0).toLocaleString()}
+        </span>
+      </div>
+    )
+  }
+
+  if (field.type === 'decimal') {
+    return (
+      <div style={fieldRowStyle}>
+        <label style={fieldLabelStyle}>{lbl}</label>
+        <input
+          type="number"
+          min={field.min}
+          max={field.max}
+          step={field.step ?? 'any'}
+          value={value as string}
+          onChange={e => onChange(e.target.value)}
+          disabled={disabled}
+          style={inputStyle}
+        />
+        <span style={{ fontSize: '0.8rem', color: '#888' }}>
+          {field.min ?? 0} – {field.max ?? 0}
         </span>
       </div>
     )
