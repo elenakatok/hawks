@@ -17,6 +17,7 @@ export const hawksSchema: OutcomeSchema = [
   { key: 'S', type: 'decimal', min: 0, max: 20, step: 0.1  },  // base salary ($M)
   { key: 'M', type: 'decimal', min: 0, max: 1,  step: 0.01 },  // merch fraction (0–1)
   { key: 'B', type: 'decimal', min: 0, max: 20, step: 0.1  },  // championship bonus ($M)
+  { key: 'notes', type: 'text' },  // optional free-text; blank = '', excluded from scoring
 ]
 
 // ── Score sense (all value-sense — real scoring in Part 3) ───────────────────

@@ -58,6 +58,7 @@ function defaultFormValues(): FormValues {
   for (const field of hawksSchema) {
     if (field.type === 'integer' || field.type === 'decimal') out[field.key] = ''
     else if (field.type === 'enum')    out[field.key] = field.options[0]
+    else if (field.type === 'text')    out[field.key] = ''
     else                               out[field.key] = false
   }
   return out
@@ -102,6 +103,9 @@ function parseForm(values: FormValues): ParseOk | ParseErr {
       outcome[field.key] = n
     } else if (field.type === 'enum') {
       outcome[field.key] = values[field.key]
+    } else if (field.type === 'text') {
+      // Optional free-text — blank is valid, stored as '' (never undefined), excluded from scoring.
+      outcome[field.key] = (values[field.key] as string) ?? ''
     } else {
       outcome[field.key] = values[field.key]
     }
@@ -180,6 +184,22 @@ function SchemaField({
             <option key={opt} value={opt}>{opt}</option>
           ))}
         </select>
+      </div>
+    )
+  }
+
+  if (field.type === 'text') {
+    return (
+      <div style={fieldRowStyle}>
+        <label style={fieldLabelStyle}>Notes</label>
+        <textarea
+          value={value as string}
+          placeholder="Optional — any terms not captured above"
+          onChange={e => onChange(e.target.value)}
+          disabled={disabled}
+          rows={3}
+          style={{ ...inputStyle, maxWidth: '100%', resize: 'vertical' as const }}
+        />
       </div>
     )
   }
