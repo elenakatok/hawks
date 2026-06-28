@@ -21,11 +21,14 @@ type ReportRow = {
   display_name: string
   group_number: number | null
   role: string
-  // PLACEHOLDER outcome column — real fields in Part 3
-  placeholder: number | null
+  // Real negotiated outcome fields (units $M; M is a 0–1 fraction).
+  S: number | null
+  M: number | null
+  B: number | null
   value_or_cost: number | null
   raw_score: number | null
   text_answers: Record<string, string>
+  notes: string | null
 }
 
 type QuestionMeta = { field: string; prompt: string; role_target: string }
@@ -47,9 +50,14 @@ function fmtSigned(n: number | null): string {
   return (n >= 0 ? '+' : '−') + Math.abs(n).toLocaleString('en-US')
 }
 
-// ── Sortable columns (PLACEHOLDER schema — real columns in Part 3) ────────────
+// Fixed-precision decimal — matches the outcome form's step (S/B → 0.1, M → 0.01).
+function fmtDec(n: number | null, dp: number): string {
+  return n == null ? '—' : n.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
+}
 
-type SortKey = 'name' | 'group' | 'role' | 'placeholder' | 'value_or_cost' | 'raw_score'
+// ── Sortable columns ──────────────────────────────────────────────────────────
+
+type SortKey = 'name' | 'group' | 'role' | 'S' | 'M' | 'B' | 'value_or_cost' | 'raw_score' | 'notes'
 
 const COLUMNS: readonly SortableColumn<ReportRow, SortKey>[] = [
   {
@@ -68,10 +76,22 @@ const COLUMNS: readonly SortableColumn<ReportRow, SortKey>[] = [
     compare: (a, b) => a.role.localeCompare(b.role),
   },
   {
-    key: 'placeholder', label: 'Placeholder', nullsLast: true, isNull: r => r.placeholder === null,
+    key: 'S', label: 'Base salary ($M)', nullsLast: true, isNull: r => r.S === null,
     tiebreak: (a, b) => a.display_name.localeCompare(b.display_name),
-    render: r => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(r.placeholder)}</span>,
-    compare: (a, b) => (a.placeholder ?? 0) - (b.placeholder ?? 0),
+    render: r => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtDec(r.S, 1)}</span>,
+    compare: (a, b) => (a.S ?? 0) - (b.S ?? 0),
+  },
+  {
+    key: 'M', label: 'Merch fraction', nullsLast: true, isNull: r => r.M === null,
+    tiebreak: (a, b) => a.display_name.localeCompare(b.display_name),
+    render: r => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtDec(r.M, 2)}</span>,
+    compare: (a, b) => (a.M ?? 0) - (b.M ?? 0),
+  },
+  {
+    key: 'B', label: 'Champ bonus ($M)', nullsLast: true, isNull: r => r.B === null,
+    tiebreak: (a, b) => a.display_name.localeCompare(b.display_name),
+    render: r => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtDec(r.B, 1)}</span>,
+    compare: (a, b) => (a.B ?? 0) - (b.B ?? 0),
   },
   {
     key: 'value_or_cost', label: 'Value / Cost', nullsLast: true, isNull: r => r.value_or_cost === null,
@@ -84,6 +104,15 @@ const COLUMNS: readonly SortableColumn<ReportRow, SortKey>[] = [
     tiebreak: (a, b) => a.display_name.localeCompare(b.display_name),
     render: r => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtSigned(r.raw_score)}</span>,
     compare: (a, b) => (a.raw_score ?? 0) - (b.raw_score ?? 0),
+  },
+  {
+    key: 'notes', label: 'Notes', headerStyle: { minWidth: 220 },
+    nullsLast: true, isNull: r => !r.notes || !r.notes.trim(),
+    tiebreak: (a, b) => a.display_name.localeCompare(b.display_name),
+    render: r => (r.notes && r.notes.trim())
+      ? <span style={{ whiteSpace: 'pre-wrap', display: 'inline-block', maxWidth: 360 }}>{r.notes}</span>
+      : '—',
+    compare: (a, b) => (a.notes ?? '').localeCompare(b.notes ?? ''),
   },
 ]
 
@@ -185,7 +214,6 @@ export default function Reports() {
       actionLabel: 'Open ↗',
     },
     // Text-question tiles (one per prep text question from prepDefaults).
-    // No text questions in placeholder prepDefaults → this list will be empty for Part 1.
     ...questions.map(q => {
       const roleLabel = ROLE_LABELS[q.role_target] ?? q.role_target
       const tileTitle = `${roleLabel}: ${q.prompt}`

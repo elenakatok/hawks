@@ -18,11 +18,15 @@ export type ReportRow = {
   display_name: string
   group_number: number | null
   role: string
-  // PLACEHOLDER outcome columns — real fields added in Part 3
-  placeholder: number | null
+  // Real negotiated outcome fields (units $M; M is a 0–1 fraction).
+  S: number | null
+  M: number | null
+  B: number | null
   value_or_cost: number | null
   raw_score: number | null
   text_answers: Record<string, string>
+  /** Optional free-text Notes from the negotiated outcome ('' or null when blank/no deal). */
+  notes: string | null
 }
 
 export const getReportData = onCall({ cors: hawksGameDef.corsOrigins }, async (request) => {
@@ -93,11 +97,13 @@ export const getReportData = onCall({ cors: hawksGameDef.corsOrigins }, async (r
         display_name,
         group_number: groupId ? (groupNumberMap.get(groupId) ?? null) : null,
         role,
-        // PLACEHOLDER outcome column
-        placeholder: outcome ? (outcome['placeholder'] as number) : null,
+        S: outcome ? (outcome['S'] as number) : null,
+        M: outcome ? (outcome['M'] as number) : null,
+        B: outcome ? (outcome['B'] as number) : null,
         value_or_cost,
         raw_score: d['raw_score'] as number,
         text_answers,
+        notes: outcome ? ((outcome['notes'] as string | undefined) ?? null) : null,
       })
     }
 
