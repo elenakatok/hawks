@@ -80,6 +80,7 @@ export default function InstructorDashboard() {
       rtdb={rtdb}
       settingsRoute="/settings"
       reportsRoute="/reports"
+      scoreAndRecord={{ callableName: 'scoreAndRecord', label: 'Score & Record' }}
     />
   )
 }
