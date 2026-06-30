@@ -4,19 +4,22 @@ import type { Outcome } from '@mygames/game-engine'
 import { extractInstructorGameId } from '@mygames/game-server'
 import { computeScoreBreakdown, hawksGameDef } from './gameDefinition'
 
-const VALID_ROLES = new Set(['angel', 'agent', 'hawks'])
+// Exported so updateGroupContract can build identical rows without duplicating these.
+export const VALID_ROLES = new Set(['angel', 'agent', 'hawks'])
 
 // Text questions from prepDefaults — read once at module load.
-const TEXT_QUESTIONS = (hawksGameDef.prepDefaults ?? [])
+export const TEXT_QUESTIONS = (hawksGameDef.prepDefaults ?? [])
   .filter(q => q.format === 'text' && !q.hidden)
   .map(q => ({ field: q.field, prompt: q.prompt, role_target: q.role_target }))
 
-const TEXT_FIELDS = TEXT_QUESTIONS.map(q => q.field)
+export const TEXT_FIELDS = TEXT_QUESTIONS.map(q => q.field)
 
 export type ReportRow = {
   participant_id: string
   display_name: string
   group_number: number | null
+  /** Group doc id — the edit target for updateGroupContract (group_number is only a display index). */
+  group_id: string | null
   role: string
   // Real negotiated outcome fields (units $M; M is a 0–1 fraction).
   S: number | null
@@ -96,6 +99,7 @@ export const getReportData = onCall({ cors: hawksGameDef.corsOrigins }, async (r
         participant_id: pdoc.id,
         display_name,
         group_number: groupId ? (groupNumberMap.get(groupId) ?? null) : null,
+        group_id: groupId ?? null,
         role,
         S: outcome ? (outcome['S'] as number) : null,
         M: outcome ? (outcome['M'] as number) : null,
@@ -113,7 +117,9 @@ export const getReportData = onCall({ cors: hawksGameDef.corsOrigins }, async (r
       return a.display_name.localeCompare(b.display_name)
     })
 
-    return { ok: true as const, rows, questions: TEXT_QUESTIONS }
+    // Authoritative contract schema, straight from the game definition — the report
+    // page renders its inline editor from THIS, never the (drift-prone) client mirror.
+    return { ok: true as const, rows, questions: TEXT_QUESTIONS, schema: hawksGameDef.outcomeSchema }
   } catch (err) {
     if (err instanceof HttpsError) throw err
     console.error('[getReportData] error:', err)

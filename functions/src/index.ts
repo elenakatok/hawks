@@ -61,6 +61,7 @@ export const submitKnowledgeCheck               = makeSubmitKnowledgeCheck(hawks
 export const submitStaticKnowledgeCheckQuestion = makeSubmitStaticKnowledgeCheckQuestion(hawksGameDef)
 export const getInfoUrls                        = makeGetInfoUrls(hawksGameDef)
 export { getReportData } from './getReportData'
+export { updateGroupContract } from './updateGroupContract'
 
 // ── Non-game onRequest endpoints ──────────────────────────────────────────────
 
