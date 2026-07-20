@@ -11,6 +11,7 @@ import {
   makeSyncRoster,
   makeTriggerMatching,
   makeStartNegotiation,
+  makeGetGroupMemberEmails,
   makeSubmitLeadOutcome,
   makeSubmitConfirmation,
   makeSubmitInstructorOutcome,
@@ -48,6 +49,7 @@ export const getRoster              = makeGetRoster(hawksGameDef)
 export const syncRoster             = makeSyncRoster(hawksGameDef)
 export const triggerMatching            = makeTriggerMatching(hawksGameDef)
 export const startNegotiation           = makeStartNegotiation(hawksGameDef)
+export const getGroupMemberEmails      = makeGetGroupMemberEmails(hawksGameDef)
 export const submitLeadOutcome          = makeSubmitLeadOutcome(hawksGameDef)
 export const submitConfirmation         = makeSubmitConfirmation(hawksGameDef)
 export const submitInstructorOutcome    = makeSubmitInstructorOutcome(hawksGameDef)
