@@ -1,5 +1,7 @@
 import type { Outcome, OutcomeSchema, RoleConfig } from '@mygames/game-engine'
 import type { GameDefinition } from '@mygames/game-server'
+// Shared latecomer joinability (Latecomer_Placement_Spec_v1 §3.1) — one predicate for all five negotiation games.
+import { negotiationIsJoinable } from '@mygames/game-server'
 
 // ── Role config ───────────────────────────────────────────────────────────────
 
@@ -95,6 +97,9 @@ export const hawksGameDef: GameDefinition = {
   reservations: { angel: 0, agent: 0, hawks: 0 },
   corsOrigins: ['https://hawks.mygames.live'],
   classroom: { callbackSecretId: 'hawks_v1' },
+  // Latecomer auto-placement (spec §3.1). Joinable = group not yet negotiating.
+  // No onPlace: negotiation placement is group_id only (audit 0b).
+  isJoinable: negotiationIsJoinable,
   // perRoleCap omitted → no cap (place every extra)
   // deadlockThreshold omitted → 5
 
