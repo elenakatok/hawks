@@ -100,6 +100,31 @@ async function testFormation(label, nAngel, nAgent, nHawks, expectedGroups) {
   ok(`${label}: exactly one is_lead per group, matching lead_participant_id`, oneLeadOk)
 }
 
+// game-server v0.30.0: a student who entered the attendance code but is not connected
+// at the instant of Match Now is STILL matched (found live in Grays 2.0, 2026-10-05:
+// one phone mid-reload turned a class of complete groups into a short one).
+async function testOfflineStudentStillMatched() {
+  console.log('\n── CODE = MATCHED (confirmed but not connected) ──')
+  const gameId = `hm_offline_${Date.now()}`
+  await post('/seedMatchTest', { game_instance_id: gameId, participants: makeParticipants(2, 2, 4) })
+  // hawks4's phone is mid-reload. Cover both RTDB namespaces the emulator may use.
+  for (const ns of ['hawks-mygames-live', 'hawks-mygames-live-default-rtdb']) {
+    const app = admin.initializeApp({ projectId: 'hawks-mygames-live', databaseURL: `http://localhost:9002?ns=${ns}` }, `ns-${ns}`)
+    await app.database().ref(`presence/${gameId}/hawks4`).remove()
+  }
+  const pv = await post('/triggerMatching', { _dev: { game_instance_id: gameId }, preview: true })
+  ok('preview: 8 confirmed → 2 complete groups, no extras, hawks4 named as not connected',
+    pv.body.ok === true && pv.body.preview?.confirmed === 8 && pv.body.preview.groups === 2 &&
+    Object.values(pv.body.preview.extras_by_role).every(n => n === 0) &&
+    pv.body.preview.not_connected.map(p => p.participant_id).join() === 'hawks4', JSON.stringify(pv.body))
+  ok('preview wrote nothing', (await readState(gameId)).groups.length === 0)
+  const res = await post('/triggerMatching', { _dev: { game_instance_id: gameId } })
+  const { groups, participants } = await readState(gameId)
+  ok('match → 2 complete groups of 1 angel + 1 agent + 2 hawks', res.body.ok === true && groups.length === 2 &&
+    groups.every(g => g.angel_participants.length === 1 && g.agent_participants.length === 1 && g.hawks_participants.length === 2))
+  ok('the not-connected student is in a group', participants.find(p => p.participant_id === 'hawks4')?.group_id != null)
+}
+
 async function main() {
   console.log('\n── Hawks triggerMatching integration ──\n')
   // 1 base group: 1 angel + 1 agent + 2 hawks.
@@ -116,6 +141,7 @@ async function main() {
   const { groups } = await readState(gameId)
   ok('no groups written on rejection', groups.length === 0, groups.length)
 
+  await testOfflineStudentStillMatched()
   console.log(`\n── Summary: ${passed} passed, ${failed} failed ──`)
   process.exit(failed === 0 ? 0 : 1)
 }
