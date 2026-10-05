@@ -125,6 +125,24 @@ async function testOfflineStudentStillMatched() {
   ok('the not-connected student is in a group', participants.find(p => p.participant_id === 'hawks4')?.group_id != null)
 }
 
+// game-server v0.31.0: extras are SPREAD. A class of 10 (3 Angels, 3 Agents, 4 Hawks)
+// used to match as one group of six and one of four — both extras in the same group.
+async function testExtrasAreSpread() {
+  console.log('\n── EXTRAS SPREAD ACROSS GROUPS ──')
+  for (const [nA, nG, nH, want] of [[3, 3, 4, '5,5'], [3, 3, 5, '5,6'], [3, 2, 4, '4,5']]) {
+    const gameId = `hm_spread_${nA}${nG}${nH}_${Date.now()}`
+    await post('/seedMatchTest', { game_instance_id: gameId, participants: makeParticipants(nA, nG, nH) })
+    const res = await post('/triggerMatching', { _dev: { game_instance_id: gameId } })
+    const { groups, participants } = await readState(gameId)
+    const sizes = groups.map(g => g.angel_participants.length + g.agent_participants.length + g.hawks_participants.length).sort().join()
+    ok(`${nA} angels + ${nG} agents + ${nH} hawks → group sizes ${want}`, res.body.ok === true && sizes === want, sizes)
+    ok('  everyone placed, every group still has ≥1 angel, ≥1 agent, ≥2 hawks, lead is a member',
+      participants.every(p => p.group_id != null) &&
+      groups.every(g => g.angel_participants.length >= 1 && g.agent_participants.length >= 1 && g.hawks_participants.length >= 2 &&
+        [...g.angel_participants, ...g.agent_participants, ...g.hawks_participants].includes(g.lead_participant_id)))
+  }
+}
+
 async function main() {
   console.log('\n── Hawks triggerMatching integration ──\n')
   // 1 base group: 1 angel + 1 agent + 2 hawks.
@@ -142,6 +160,7 @@ async function main() {
   ok('no groups written on rejection', groups.length === 0, groups.length)
 
   await testOfflineStudentStillMatched()
+  await testExtrasAreSpread()
   console.log(`\n── Summary: ${passed} passed, ${failed} failed ──`)
   process.exit(failed === 0 ? 0 : 1)
 }
